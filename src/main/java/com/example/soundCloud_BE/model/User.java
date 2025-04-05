@@ -32,47 +32,4 @@ public class User {
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    public Integer getId() {
-        return id;
-    }
-
-    public String getFirebaseUid() {
-        return firebaseUid;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public String getDisplayName() {
-        return displayName;
-    }
-
-    public void setFirebaseUid(String firebaseUid) {
-        this.firebaseUid = firebaseUid;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public void setDisplayName(String displayName) {
-        this.displayName = displayName;
-    }
-
-    public void setAvatarUrl(String avatarUrl) {
-        this.avatarUrl = avatarUrl;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public String getAvatarUrl() {
-        return avatarUrl;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
 }

@@ -2,25 +2,22 @@ package com.example.soundCloud_BE.config;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
+import com.google.firebase.auth.FirebaseAuth;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import javax.annotation.PostConstruct;
-import java.io.FileInputStream;
 import java.io.InputStream;
 
 @Configuration
 public class FirebaseConfig {
 
-    @Value("${firebase.credentials.path}")
-    private String firebaseCredentialsPath;
 
     @PostConstruct
     public void initialize() {
         try {
-//            InputStream serviceAccount = getClass().getResourceAsStream("/firebase-service-account.json");
-            FileInputStream serviceAccount = new FileInputStream(firebaseCredentialsPath);
-
+            InputStream serviceAccount = getClass().getResourceAsStream("/firebase-service-account.json");
 
             FirebaseOptions options = FirebaseOptions.builder()
                     .setCredentials(GoogleCredentials.fromStream(serviceAccount))
@@ -30,7 +27,13 @@ public class FirebaseConfig {
                 FirebaseApp.initializeApp(options);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException("Failed to initialize Firebase", e);
         }
+    }
+
+    // Thêm bean này để có thể @Autowired FirebaseAuth
+    @Bean
+    public FirebaseAuth firebaseAuth() {
+        return FirebaseAuth.getInstance();
     }
 }

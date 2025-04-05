@@ -21,6 +21,14 @@ public class FirebaseSecurityService {
         throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED, "Invalid authentication");
     }
 
+    public String getCurrentUserEmail() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getCredentials() instanceof FirebaseToken) {
+            return ((FirebaseToken) authentication.getCredentials()).getEmail();
+        }
+        throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED, "Invalid authentication");
+    }
+
     // Xác thực token và trả về FirebaseToken
     public FirebaseToken verifyToken(String idToken) {
         try {

@@ -1,8 +1,10 @@
 package com.example.soundCloud_BE.controller;
 
+import com.example.soundCloud_BE.dto.UpdateProfileRequest;
+import com.example.soundCloud_BE.dto.UserResponse;
 import com.example.soundCloud_BE.model.User;
 import com.example.soundCloud_BE.repository.UserRepository;
-import com.example.soundCloud_BE.security.FirebaseSecurityService;
+import com.example.soundCloud_BE.service.UserService;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
@@ -16,6 +18,8 @@ public class UserController {
 
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private UserService userService;
 
     @PostMapping("/sync")
     public ResponseEntity<User> syncUser(
@@ -38,4 +42,18 @@ public class UserController {
         User savedUser = userRepository.save(user);
         return ResponseEntity.ok(savedUser);
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> getCurrentUser() {
+        return ResponseEntity.ok(userService.getCurrentUser());
+    }
+
+    @PutMapping("/profile")
+    public ResponseEntity<UserResponse> updateProfile(
+            @RequestBody UpdateProfileRequest request) {
+        return ResponseEntity.ok(userService.updateProfile(request));
+    }
+
+
+
 }
