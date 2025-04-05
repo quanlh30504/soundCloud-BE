@@ -65,6 +65,13 @@
 			<artifactId>firebase-admin</artifactId>
 			<version>9.4.3</version>
 		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/me.paulschwarz/spring-dotenv -->
+		<dependency>
+			<groupId>me.paulschwarz</groupId>
+			<artifactId>spring-dotenv</artifactId>
+			<version>4.0.0</version>
+		</dependency>
 	</dependencies>
 
 	<build>
