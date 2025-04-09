@@ -22,10 +22,9 @@ spotify:
     id: ${SPOTIFY_CLIENT_ID}
     secret: ${SPOTIFY_CLIENT_SECRET}
 
-musixmatch:
-  api:
-    baseUrl: https://api.musixmatch.com/ws/1.1/
-    key: ${MUSIXMATCH_API_KEY}
+lyrics:
+  ovh:
+    baseUrl: https://api.lyrics.ovh/
 
 app:
   music:
@@ -34,4 +33,4 @@ app:
 
 ytdlp:
   auto-install: true
-  executable-path: ${YTDLP_EXECUTABLE_PATH}
+  executable-path: ${YTDLP_EXECUTABLE_PATH:}

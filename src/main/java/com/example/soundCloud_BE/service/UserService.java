@@ -27,6 +27,7 @@ public class UserService {
                 .orElseThrow(() -> new NullPointerException("User not found"));
 
         return UserResponse.builder()
+                .firebaseId(user.getFirebaseUid())
                 .email(user.getEmail())
                 .displayName(user.getDisplayName())
                 .avatarUrl(user.getAvatarUrl())
@@ -60,12 +61,13 @@ public class UserService {
 
         userRepository.save(user);
 
-        return new UserResponse(
-                user.getEmail(),
-                user.getDisplayName(),
-                user.getAvatarUrl(),
-                user.getCreatedAt()
-        );
+        return UserResponse.builder()
+                .firebaseId(user.getFirebaseUid())
+                .displayName(user.getDisplayName())
+                .avatarUrl(user.getAvatarUrl())
+                .createdAt(user.getCreatedAt())
+                .build();
+
     }
 
 

@@ -1,5 +1,6 @@
 package com.example.soundCloud_BE.dto;
 
+import com.example.soundCloud_BE.model.Tracks;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,6 +9,7 @@ import lombok.NoArgsConstructor;
 import se.michaelthelin.spotify.model_objects.specification.ArtistSimplified;
 import se.michaelthelin.spotify.model_objects.specification.Track;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,7 +20,8 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TrackDTO {
-    private String id;
+    private Integer id;
+    private String spotifyId;
     private String name;
     private Integer durationMs;
     private String previewUrl;
@@ -32,10 +35,12 @@ public class TrackDTO {
     private Boolean explicit;
     private String spotifyUri;
     private String spotifyUrl;
+    private String filePath;
+    private String downloadStatus;
 
     public static TrackDTO fromTrack(Track track) {
         return TrackDTO.builder()
-                .id(track.getId())
+                .spotifyId(track.getId())
                 .name(track.getName())
                 .durationMs(track.getDurationMs())
                 .previewUrl(track.getPreviewUrl())
@@ -61,4 +66,23 @@ public class TrackDTO {
                 .spotifyUrl(track.getExternalUrls().get("spotify"))
                 .build();
     }
+
+    public static TrackDTO fromEntity(Tracks track) {
+        return TrackDTO.builder()
+                .id(track.getId())
+                .spotifyId(track.getSpotifyId()) // Maps 'spotifyId' from Tracks to 'id'
+                .name(track.getTitle()) // Maps 'title' from Tracks to 'name'
+                .albumImages(track.getCoverUrl() != null
+                        ? List.of(ImageDTO.builder().url(track.getCoverUrl()).build())
+                        : new ArrayList<>()) // Handles 'coverUrl' and maps it to 'albumImages' (adds as an ImageDTO)
+                .artists(track.getArtists() != null && !track.getArtists().isEmpty()
+                        ? Arrays.stream(track.getArtists().split(","))
+                        .map(String::trim)
+                        .collect(Collectors.toList())
+                        : new ArrayList<>()) // Splits and trims the artist string to map to the 'artists' field
+                .filePath(track.getFilePath()) // Maps 'filePath'
+                .downloadStatus(track.getDownloadStatus()) // Maps 'downloadStatus'
+                .build();
+    }
+    
 } 

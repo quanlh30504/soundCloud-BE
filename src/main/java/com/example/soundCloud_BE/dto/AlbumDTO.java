@@ -27,9 +27,10 @@ public class AlbumDTO {
     private List<String> artistIds;
     private List<ImageDTO> images;
     private String releaseDate;
-//    private Integer totalTracks;
+    private Integer totalTracks;
     private String spotifyUri;
     private String spotifyUrl;
+    private List<TrackDTO> tracks;
 
 
     public static AlbumDTO fromAlbum(Album album) {

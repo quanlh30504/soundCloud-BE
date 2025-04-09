@@ -1,9 +1,7 @@
 package com.example.soundCloud_BE.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -12,10 +10,12 @@ import java.util.List;
 
 @Entity
 @Table(name = "playlists")
+@Getter
+@Setter
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Playlist {
+public class Playlists {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
@@ -30,8 +30,8 @@ public class Playlist {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "is_private")
-    private Boolean isPrivate = true;
+    @Column(name = "is_public")
+    private Boolean isPublic = false;
 
     @Column(name = "created_at")
     @CreationTimestamp
@@ -43,6 +43,6 @@ public class Playlist {
             joinColumns = @JoinColumn(name = "playlist_id"),
             inverseJoinColumns = @JoinColumn(name = "song_id")
     )
-    private List<Song> songs = new ArrayList<>();
+    private List<Tracks> tracks = new ArrayList<>();
 }
 
