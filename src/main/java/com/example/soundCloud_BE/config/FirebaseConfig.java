@@ -30,10 +30,10 @@ public class FirebaseConfig {
             throw new RuntimeException("Failed to initialize Firebase", e);
         }
     }
-
     // Thêm bean này để có thể @Autowired FirebaseAuth
     @Bean
     public FirebaseAuth firebaseAuth() {
         return FirebaseAuth.getInstance();
     }
+
 }

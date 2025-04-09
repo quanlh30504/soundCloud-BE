@@ -1,7 +1,7 @@
 package com.example.soundCloud_BE.controller;
 
-import com.example.soundCloud_BE.model.DownloadResult;
-import com.example.soundCloud_BE.model.LyricsResponse;
+import com.example.soundCloud_BE.dto.DownloadResult;
+import com.example.soundCloud_BE.dto.LyricsResponse;
 import com.example.soundCloud_BE.service.SpotifyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

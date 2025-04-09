@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class UserResponse {
+    private String firebaseId;
     private String email;
     private String displayName;
     private String avatarUrl;
