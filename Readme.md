@@ -61,6 +61,9 @@ Response:
 
 ---
 
+## Database
+- Data schema: [soundcloud_db_schema](Data/soundcloud_db_schema.sql)
+
 ## ✍️ Ghi chú
 
 - Cần Java 17+ và Maven 3.8+ để build ứng dụng.
