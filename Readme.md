@@ -1,5 +1,3 @@
-
-
 ## 🔧 Cài đặt & Cấu hình
 
 ### 1. Tạo Firebase Service Account và file `.env`
