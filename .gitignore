@@ -34,4 +34,4 @@ build/
 
 src/main/resources/firebase-service-account.json
 .env
-music-downloads
+music-downloads/

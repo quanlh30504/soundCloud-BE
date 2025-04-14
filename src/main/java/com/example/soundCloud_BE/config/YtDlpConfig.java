@@ -27,6 +27,9 @@ public class YtDlpConfig {
     
     @Value("${ytdlp.executable-path:}")
     private String configuredExecutablePath;
+
+    @Value("${ffmpeg.executable-path:}")
+    private String ffmpegExecutablePath;
     
     private String executablePath;
 
@@ -193,5 +196,10 @@ public class YtDlpConfig {
     @Bean
     public String ytDlpExecutablePath() {
         return executablePath;
+    }
+
+    @Bean
+    public String ffmpegExecutablePath() {
+        return ffmpegExecutablePath;
     }
 } 

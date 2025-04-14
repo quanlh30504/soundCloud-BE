@@ -34,3 +34,5 @@ app:
 ytdlp:
   auto-install: true
   executable-path: ${YTDLP_EXECUTABLE_PATH:}
+ffmpeg:
+  executable-path: ${FFMPEG_EXECUTABLE_PATH:}
