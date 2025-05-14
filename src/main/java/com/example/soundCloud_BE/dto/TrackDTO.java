@@ -37,6 +37,7 @@ public class TrackDTO {
     private String spotifyUrl;
     private String filePath;
     private String downloadStatus;
+    private String streamUrl;
 
     public static TrackDTO fromTrack(Track track) {
         return TrackDTO.builder()
@@ -82,6 +83,7 @@ public class TrackDTO {
                         : new ArrayList<>()) // Splits and trims the artist string to map to the 'artists' field
                 .filePath(track.getFilePath()) // Maps 'filePath'
                 .downloadStatus(track.getDownloadStatus()) // Maps 'downloadStatus'
+                .streamUrl(track.getStreamUrl()) // Maps 'streamUrl'
                 .build();
     }
     

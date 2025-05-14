@@ -39,6 +39,9 @@ public class Tracks {
     @Column(name = "download_status")
     private String downloadStatus = "pending";
 
+    @Column(name = "stream_url", columnDefinition = "TEXT")
+    private String streamUrl;
+
     @Column(name = "created_at")
     @CreationTimestamp
     private LocalDateTime createdAt;
