@@ -3,6 +3,8 @@ package com.example.soundCloud_BE.service;
 import com.example.soundCloud_BE.dto.DownloadResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
@@ -20,6 +22,8 @@ public class YouTubeDownloadService {
 
     private final String musicStoragePath;
     private final String ytDlpExecutablePath;
+    @Value("${ffmpeg.executable-path:}")
+    private final String ffmpegExecutablePath;
 
     public CompletableFuture<DownloadResult> downloadSong(String trackName, String artistName) {
         return CompletableFuture.supplyAsync(() -> {
@@ -78,7 +82,10 @@ public class YouTubeDownloadService {
                 
                 // Embed metadata in file
                 command.add("--embed-metadata");
-                
+
+                command.add("--ffmpeg-location");
+                command.add(ffmpegExecutablePath);
+
                 // Execute the process
                 log.info("Executing command: {}", String.join(" ", command));
                 ProcessBuilder processBuilder = new ProcessBuilder(command);
