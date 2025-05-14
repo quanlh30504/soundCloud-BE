@@ -6,6 +6,8 @@ import com.example.soundCloud_BE.dto.PlaylistDTO;
 import com.example.soundCloud_BE.dto.TrackDTO;
 import com.example.soundCloud_BE.dto.DownloadResult;
 import com.example.soundCloud_BE.dto.LyricsResponse;
+import com.example.soundCloud_BE.dto.CategoryDTO;
+import com.neovisionaries.i18n.CountryCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -26,6 +28,7 @@ import se.michaelthelin.spotify.requests.data.artists.GetArtistsAlbumsRequest;
 import se.michaelthelin.spotify.requests.data.search.simplified.SearchAlbumsRequest;
 import se.michaelthelin.spotify.requests.data.search.simplified.SearchPlaylistsRequest;
 import se.michaelthelin.spotify.requests.data.search.simplified.SearchTracksRequest;
+
 import org.apache.hc.core5.http.ParseException;
 
 import java.io.IOException;
@@ -261,4 +264,42 @@ public class SpotifyService {
         }
     }
 
-} 
+    public List<CategoryDTO> getCategories() {
+        authenticate();
+        try {
+            Paging<Category> categoryPaging = spotifyApi
+                .getListOfCategories()
+                .country(CountryCode.US)
+                .limit(20)
+                .build()
+                .execute();
+
+            return Arrays.stream(categoryPaging.getItems())
+                .map(CategoryDTO::fromEntity)
+                .collect(Collectors.toList());
+        } catch (IOException | SpotifyWebApiException | ParseException e) {
+            log.error("Failed to fetch categories", e);
+            throw new RuntimeException("Failed to fetch categories: " + e.getMessage());
+        }
+    }
+
+    public List<PlaylistDTO> getPlaylistsByCategory(String categoryId) {
+        authenticate();
+        try {
+            Paging<PlaylistSimplified> playlistPaging = spotifyApi
+                .getCategorysPlaylists(categoryId)
+                .country(CountryCode.US)
+                .limit(20)
+                .build()
+                .execute();
+
+            return Arrays.stream(playlistPaging.getItems())
+                .map(PlaylistDTO::fromPlaylistSimplified)
+                .collect(Collectors.toList());
+        } catch (IOException | SpotifyWebApiException | ParseException e) {
+            log.error("Failed to fetch playlists for category: {}", categoryId, e);
+            throw new RuntimeException("Failed to fetch playlists: " + e.getMessage());
+        }
+    }
+}
+ 

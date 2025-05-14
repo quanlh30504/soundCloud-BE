@@ -1,12 +1,11 @@
 package com.example.soundCloud_BE.controller;
 
-import com.example.soundCloud_BE.dto.AlbumDTO;
-import com.example.soundCloud_BE.dto.ArtistDTO;
-import com.example.soundCloud_BE.dto.PlaylistDTO;
-import com.example.soundCloud_BE.dto.TrackDTO;
+import com.example.soundCloud_BE.dto.*;
+import com.example.soundCloud_BE.service.ListeningHistoryService;
 import com.example.soundCloud_BE.service.SongService;
 import com.example.soundCloud_BE.service.SpotifyService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -16,7 +15,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.time.LocalDateTime;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/spotify")
 @RequiredArgsConstructor
@@ -24,6 +25,7 @@ public class SpotifyController {
 
     private final SpotifyService spotifyService;
     private final SongService songService;
+    private final ListeningHistoryService listeningHistoryService;
 
     @GetMapping("/search/tracks")
     public ResponseEntity<List<TrackDTO>> searchTracks(@RequestParam String query) {
@@ -102,5 +104,83 @@ public class SpotifyController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(playlist);
+    }
+
+    @PostMapping("/tracks/{spotifyId}/history")
+    public ResponseEntity<ListeningHistoryDTO> addToHistory(
+            @PathVariable String spotifyId,
+            @RequestHeader("X-Firebase-Uid") String firebaseUid) {
+        log.info("Adding track {} to history for user {}", spotifyId, firebaseUid);
+        ListeningHistoryDTO history = listeningHistoryService.addToHistory(firebaseUid, spotifyId);
+        return ResponseEntity.ok(history);
+    }
+
+    @GetMapping("/history")
+    public ResponseEntity<Page<ListeningHistoryDTO>> getUserHistory(
+            @RequestHeader("X-Firebase-Uid") String firebaseUid,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<ListeningHistoryDTO> history = listeningHistoryService.getUserHistory(firebaseUid, pageable);
+        return ResponseEntity.ok(history);
+    }
+
+    @GetMapping("/history/recent")
+    public ResponseEntity<Page<ListeningHistoryDTO>> getRecentHistory(
+            @RequestHeader("X-Firebase-Uid") String firebaseUid,
+            @RequestParam(defaultValue = "24") int hours,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        
+        LocalDateTime since = LocalDateTime.now().minusHours(hours);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<ListeningHistoryDTO> history = listeningHistoryService.getRecentHistory(firebaseUid, since, pageable);
+        return ResponseEntity.ok(history);
+    }
+
+    @GetMapping("/history/most-played")
+    public ResponseEntity<Page<TrackDTO>> getMostPlayedTracks(
+            @RequestHeader("X-Firebase-Uid") String firebaseUid,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<TrackDTO> tracks = listeningHistoryService.getMostPlayedTracks(firebaseUid, pageable);
+        return ResponseEntity.ok(tracks);
+    }
+
+    @DeleteMapping("/history")
+    public ResponseEntity<Void> clearHistory(@RequestHeader("X-Firebase-Uid") String firebaseUid) {
+        listeningHistoryService.clearHistory(firebaseUid);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/history/tracks/{trackId}")
+    public ResponseEntity<Void> removeFromHistory(
+            @PathVariable Integer trackId,
+            @RequestHeader("X-Firebase-Uid") String firebaseUid) {
+        listeningHistoryService.removeFromHistory(firebaseUid, trackId);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/categories")
+    public ResponseEntity<List<CategoryDTO>> getCategories() {
+        try {
+            List<CategoryDTO> categories = spotifyService.getCategories();
+            return ResponseEntity.ok(categories);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(null);
+        }
+    }
+
+    @GetMapping("/categories/{categoryId}/playlists")
+    public ResponseEntity<List<PlaylistDTO>> getPlaylistsByCategory(@PathVariable String categoryId) {
+        try {
+            List<PlaylistDTO> playlists = spotifyService.getPlaylistsByCategory(categoryId);
+            return ResponseEntity.ok(playlists);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(null);
+        }
     }
 } 
