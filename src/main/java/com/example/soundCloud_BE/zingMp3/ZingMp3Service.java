@@ -15,6 +15,8 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,9 +27,7 @@ public class ZingMp3Service {
 
     @Autowired
     private RestTemplate restTemplate;
-    
-    @Autowired
-    private SpotifyService spotifyService;
+
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -50,7 +50,7 @@ public class ZingMp3Service {
      * @param zingId ID bài hát trên Zing MP3
      * @return Map chứa các URL stream với quality khác nhau (128, 320)
      */
-    public Map<String, String> getStreamingUrl(String zingId) {
+    public String getStreamingUrl(String zingId) {
         try {
             String url = zingMp3ServerUrl + "/api/song/streamUrl/" + zingId;
             JsonNode response = restTemplate.getForObject(url, JsonNode.class);
@@ -60,13 +60,11 @@ public class ZingMp3Service {
             }
 
             JsonNode data = response.get("data");
-            Map<String, String> streamUrls = new HashMap<>();
+
+            String streamUrls = null;
             
             if (data.has("128")) {
-                streamUrls.put("128", data.get("128").asText());
-            }
-            if (data.has("320")) {
-                streamUrls.put("320", data.get("320").asText());
+                streamUrls = data.get("128").asText();
             }
             
             return streamUrls;
@@ -162,105 +160,130 @@ public class ZingMp3Service {
     }
 
     /**
-     * Phân tích nội dung .lrc thành danh sách các dòng lời bài hát
+     * Phân tích nội dung .lrc thành danh sách lời bài hát
+     * @param lrcContent Nội dung tệp .lrc
+     * @return Danh sách các dòng lời bài hát
      */
     private List<Map<String, String>> parseLrcContent(String lrcContent) {
-        List<Map<String, String>> lyrics = new ArrayList<>();
-        String[] lines = lrcContent.split("\n");
 
-        for (String line : lines) {
-            // Bỏ qua các dòng metadata như [ar:Artist] hoặc rỗng
-            if (!line.matches("\\[\\d{2}:\\d{2}\\.\\d{2}\\].*")) {
-                continue;
-            }
-
-            // Tách timestamp và text
-            String[] parts = line.split("]", 2);
-            if (parts.length < 2) {
-                continue;
-            }
-
-            String timestamp = parts[0].substring(1); // Bỏ dấu [
-            String text = parts[1].trim();
-
-            Map<String, String> lyricLine = new HashMap<>();
-            lyricLine.put("timestamp", timestamp);
-            lyricLine.put("text", text);
-            lyrics.add(lyricLine);
+        if (lrcContent == null || lrcContent.trim().isEmpty()) {
+            log.warn("LRC content is null or empty");
+            return Collections.emptyList();
         }
 
-        return lyrics;
+        List<LyricLine> lyrics = new ArrayList<>();
+
+        // Regex khớp timestamp: [mm:ss.xx] hoặc [mm:ss.xxx]
+        String timestampRegex = "\\[(\\d{1,2}:\\d{2}\\.\\d{2,3})\\]";
+        Pattern timestampPattern = Pattern.compile(timestampRegex, Pattern.UNICODE_CHARACTER_CLASS);
+
+        String[] lines = lrcContent.split("\n");
+        for (String line : lines) {
+            line = line.trim();
+            if (line.isEmpty()) {
+                continue; // Bỏ qua dòng rỗng
+            }
+
+            // Bỏ qua metadata như [ar:Artist], [ti:Title]
+            if (line.matches("\\[\\w+:.+\\]")) {
+                log.debug("Skipping metadata: {}", line);
+                continue;
+            }
+
+            // Xử lý dòng có timestamp
+            Matcher matcher = timestampPattern.matcher(line);
+            if (!matcher.find()) {
+                log.debug("Skipping line without valid timestamp: {}", line);
+                continue;
+            }
+
+            String timestamp = matcher.group(1); // Lấy mm:ss.xx hoặc mm:ss.xxx
+
+            // Kiểm tra timestamp hợp lệ
+            if (!isValidTimestamp(timestamp)) {
+                log.warn("Invalid timestamp: {}", timestamp);
+                continue;
+            }
+
+            // Lấy text sau timestamp (bao gồm trường hợp text rỗng)
+            String text = "";
+            if (matcher.end() < line.length()) {
+                text = line.substring(matcher.end()).trim();
+            } else {
+                log.debug("Found timestamp-only line: {}", timestamp);
+            }
+
+            lyrics.add(new LyricLine(timestamp, text));
+        }
+
+        // Sắp xếp lyrics theo timestamp
+        if (!lyrics.isEmpty()) {
+            lyrics.sort(Comparator.comparing(this::parseTimestampToSeconds));
+        } else {
+            log.warn("No valid lyrics found in LRC content");
+        }
+
+        // Chuyển sang List<Map<String, String>> để giữ tương thích
+        return lyrics.stream()
+                .map(LyricLine::toMap)
+                .collect(Collectors.toList());
     }
 
     /**
-            * Converts Spotify track ID to Zing MP3 song ID.
-     *
-             * @param spotifyId ID bài hát trên Spotify
-     * @return Zing MP3 ID hoặc null nếu không tìm thấy
+     * Kiểm tra timestamp hợp lệ (mm:ss.xx hoặc mm:ss.xxx)
      */
-//    @Cacheable(value = "zingMp3IdMapping", key = "#spotifyId")
-    public String convertSpotifyIdToZingId(String spotifyId) {
+    private boolean isValidTimestamp(String timestamp) {
         try {
-            // Get track info from Spotify
-            var spotifyTrack = spotifyService.getTrack(spotifyId);
-            if (spotifyTrack == null || spotifyTrack.getArtists() == null || spotifyTrack.getArtists().isEmpty()) {
-                log.warn("Spotify track not found or has no artists for ID: {}", spotifyId);
-                return null;
+            String[] timeParts = timestamp.split("[:\\.]");
+            if (timeParts.length != 3) {
+                return false;
             }
 
-            var artistsName = spotifyTrack.getArtists().stream()
-                    .collect(Collectors.joining(", "));
+            int minutes = Integer.parseInt(timeParts[0]);
+            int seconds = Integer.parseInt(timeParts[1]);
+            int milliseconds = Integer.parseInt(timeParts[2]);
 
-            // Create search query
-            String searchQuery = spotifyTrack.getName() + " " + spotifyTrack.getArtists().get(0) ;
-            log.debug("Search query for Spotify ID {}: {}", spotifyId, searchQuery);
-
-            // Build URL
-            String searchUrl = UriComponentsBuilder
-                    .fromHttpUrl(zingMp3ServerUrl + "/api/search")
-                    .queryParam("keyword", URLEncoder.encode(searchQuery, StandardCharsets.UTF_8))
-                    .build()
-                    .toUriString();
-
-            // Send request
-            log.info("Sending search request to: {}", searchUrl);
-            ResponseEntity<String> response = restTemplate.getForEntity(searchUrl, String.class);
-
-            // Check HTTP status
-            if (!response.getStatusCode().is2xxSuccessful()) {
-                log.error("Search request failed with status: {}", response.getStatusCode());
-                throw new ZingMp3Exception("Search request failed with status: " + response.getStatusCode());
+            // Kiểm tra giới hạn
+            if (minutes >= 60 || seconds >= 60) {
+                return false;
             }
 
-            // Parse response
-            String responseBody = response.getBody();
-            log.debug("Response body: {}", responseBody);
-            JsonNode jsonNode = objectMapper.readTree(responseBody);
-
-            // Check for API error
-            if (jsonNode.has("err") && jsonNode.get("err").asInt() != 0) {
-                log.error("Zing MP3 API error: {}", jsonNode.get("msg").asText());
-                throw new ZingMp3Exception("Zing MP3 API error: " + jsonNode.get("msg").asText());
+            // Kiểm tra độ dài mili giây (2 hoặc 3 chữ số)
+            if (timeParts[2].length() != 2 && timeParts[2].length() != 3) {
+                return false;
             }
 
-            // Extract data
-            JsonNode data = jsonNode.has("data") ? jsonNode.get("data") : null;
-            if (data == null || !data.has("songs") || !data.get("songs").isArray() || data.get("songs").isEmpty()) {
-                log.info("No matching songs found for query: {}", searchQuery);
-                return null;
+            // Kiểm tra giá trị mili giây hợp lệ
+            if (timeParts[2].length() == 2 && milliseconds > 99) {
+                return false;
+            }
+            if (timeParts[2].length() == 3 && milliseconds > 999) {
+                return false;
             }
 
-            // Return the ID of the first matching song
-            String zingId = data.get("songs").get(0).get("encodeId").asText("");
-            log.info("Converted Spotify ID {} to Zing MP3 ID: {}", spotifyId, zingId);
-            return zingId;
-
-        } catch (ZingMp3Exception e) {
-            log.error("Error converting Spotify ID {}: {}", spotifyId, e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            log.error("Unexpected error converting Spotify ID {}: {}", spotifyId, e.getMessage(), e);
-            throw new ZingMp3Exception("Error converting Spotify ID to Zing MP3 ID: " + spotifyId, e);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
         }
     }
+
+    /**
+     * Chuyển timestamp thành giây để sắp xếp
+     */
+    private double parseTimestampToSeconds(LyricLine line) {
+        try {
+            String[] parts = line.timestamp().split("[:\\.]");
+            int minutes = Integer.parseInt(parts[0]);
+            int seconds = Integer.parseInt(parts[1]);
+            int milliseconds = parts.length > 2 ? Integer.parseInt(parts[2]) : 0;
+            // Xử lý mili giây dựa trên độ dài (2 hoặc 3 chữ số)
+            double msFactor = parts[2].length() == 2 ? 100.0 : 1000.0;
+            return minutes * 60.0 + seconds + milliseconds / msFactor;
+        } catch (Exception e) {
+            log.warn("Error parsing timestamp {}: {}", line.timestamp(), e.getMessage());
+            return 0.0;
+        }
+    }
+
+
 }

@@ -13,6 +13,10 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=500,expireAfterWrite=1h
 
 firebase:
   service-account-path: ${FIREBASE_SERVICE_ACCOUNT_PATH}

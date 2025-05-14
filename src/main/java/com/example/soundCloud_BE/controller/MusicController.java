@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @RestController
@@ -16,15 +18,20 @@ public class MusicController {
 
     private final SpotifyService spotifyService;
 
-    @GetMapping("/lyrics/{trackId}")
-    public ResponseEntity<LyricsResponse> getTrackLyrics(@PathVariable String trackId) {
-        LyricsResponse lyrics = spotifyService.getTrackLyrics(trackId);
+    @GetMapping("/lyricsOvh/{spotifyId}")
+    public ResponseEntity<LyricsResponse> getTrackLyrics(@PathVariable String spotifyId) {
+        LyricsResponse lyrics = spotifyService.getTrackLyricsOvh(spotifyId);
         return ResponseEntity.ok(lyrics);
     }
+
+    @GetMapping("/lyricsZingMp3/{spotifyId}")
+    public ResponseEntity<List<Map<String,String>>> getTrackLyricsZingMp3(@PathVariable String spotifyId) {
+        return ResponseEntity.ok(spotifyService.getTrackLyricsZingMp3(spotifyId));
+    }
     
-    @PostMapping("/download/{trackId}")
-    public CompletableFuture<ResponseEntity<DownloadResult>> downloadTrack(@PathVariable String trackId) {
-        return spotifyService.downloadTrackAudio(trackId)
+    @PostMapping("/download/{spotifyId}")
+    public CompletableFuture<ResponseEntity<DownloadResult>> downloadTrack(@PathVariable String spotifyId) {
+        return spotifyService.downloadTrackAudio(spotifyId)
                 .thenApply(result -> {
                     if (result.getSuccess()) {
                         return ResponseEntity.ok(result);
@@ -33,4 +40,6 @@ public class MusicController {
                     }
                 });
     }
+    
+    
 } 

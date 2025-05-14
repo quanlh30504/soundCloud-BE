@@ -7,13 +7,22 @@ import com.example.soundCloud_BE.dto.TrackDTO;
 import com.example.soundCloud_BE.dto.DownloadResult;
 import com.example.soundCloud_BE.dto.LyricsResponse;
 import com.example.soundCloud_BE.dto.CategoryDTO;
+import com.example.soundCloud_BE.zingMp3.ZingMp3Service;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neovisionaries.i18n.CountryCode;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 import se.michaelthelin.spotify.SpotifyApi;
 import se.michaelthelin.spotify.exceptions.SpotifyWebApiException;
 import se.michaelthelin.spotify.model_objects.credentials.ClientCredentials;
@@ -32,10 +41,15 @@ import se.michaelthelin.spotify.requests.data.search.simplified.SearchTracksRequ
 import org.apache.hc.core5.http.ParseException;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.text.Normalizer;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,12 +57,20 @@ import java.util.stream.Collectors;
 @Slf4j
 public class SpotifyService {
 
+    @Value("${zingmp3.server.url:http://localhost:8088}")
+    private String zingMp3ServerUrl;
+
+    private final ObjectMapper objectMapper;
+
+
+    private final RestTemplate restTemplate;
     private final SpotifyApi spotifyApi;
     private final ClientCredentialsRequest clientCredentialsRequest;
     private final LyricsService lyricsService;
     private final YouTubeDownloadService youTubeDownloadService;
+    private final ZingMp3Service zingMp3Service;
 
-    private void authenticate() {
+    public void authenticate() {
         try {
             ClientCredentials clientCredentials = clientCredentialsRequest.execute();
             spotifyApi.setAccessToken(clientCredentials.getAccessToken());
@@ -119,22 +141,35 @@ public class SpotifyService {
         }
     }
 
-    public TrackDTO getTrack(String trackId) {
+    public TrackDTO getTrack(String spotifyId) {
         authenticate();
         try {
-            Track track = spotifyApi.getTrack(trackId).build().execute();
+            Track track = spotifyApi.getTrack(spotifyId).build().execute();
             return TrackDTO.fromTrack(track);
         } catch (IOException | SpotifyWebApiException | ParseException e) {
             throw new RuntimeException("Error getting track", e);
         }
     }
     
-    public LyricsResponse getTrackLyrics(String trackId) {
-        TrackDTO track = getTrack(trackId);
+    public LyricsResponse getTrackLyricsOvh(String spotifyId) {
+        TrackDTO track = getTrack(spotifyId);
         String trackName = track.getName();
         String artistName = track.getArtists().get(0); // Get first artist
         
         return lyricsService.getLyrics(trackName, artistName);
+    }
+
+
+    public List<Map<String, String>> getTrackLyricsZingMp3(String spotifyId) {
+
+        String zingMp3Id = convertSpotifyIdToZingId(spotifyId);
+
+        if (zingMp3Id == null) {
+            log.error("Failed to convert Spotify ID to Zing ID for: {}", spotifyId);
+            return Collections.emptyList();
+        }
+
+        return zingMp3Service.getLyrics(zingMp3Id);
     }
     
     public CompletableFuture<DownloadResult> downloadTrackAudio(String trackId) {
@@ -301,5 +336,91 @@ public class SpotifyService {
             throw new RuntimeException("Failed to fetch playlists: " + e.getMessage());
         }
     }
+
+
+    /**
+     * Converts Spotify track ID to Zing MP3 song ID.
+     *
+     * @param spotifyId ID bài hát trên Spotify
+     * @return Zing MP3 ID hoặc null nếu không tìm thấy
+     */
+    @Cacheable(value = "zingMp3IdMapping", key = "#spotifyId")
+    public String convertSpotifyIdToZingId(String spotifyId) {
+        try {
+            // Get track info from Spotify
+            var spotifyTrack = getTrack(spotifyId);
+            if (spotifyTrack == null || spotifyTrack.getArtists() == null || spotifyTrack.getArtists().isEmpty()) {
+                log.warn("Spotify track not found or has no artists for ID: {}", spotifyId);
+                return null;
+            }
+
+            var artistsName = spotifyTrack.getArtists().stream()
+                    .collect(Collectors.joining(", "));
+
+            // Create search query
+            String searchQuery = normalizeString(spotifyTrack.getName() + " " + artistsName) ;
+            log.debug("Search query for Spotify ID {}: {}", spotifyId, searchQuery);
+
+            // Build URL
+            String searchUrl = UriComponentsBuilder
+                    .fromHttpUrl(zingMp3ServerUrl + "/api/search")
+                    .queryParam("keyword", URLEncoder.encode(searchQuery, StandardCharsets.UTF_8))
+                    .build()
+                    .toUriString();
+
+            // Send request
+            log.info("Sending search request to: {}", searchUrl);
+            ResponseEntity<String> response = restTemplate.getForEntity(searchUrl, String.class);
+
+            // Check HTTP status
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                log.error("Search request failed with status: {}", response.getStatusCode());
+                throw new ZingMp3Service.ZingMp3Exception("Search request failed with status: " + response.getStatusCode());
+            }
+
+            // Parse response
+            String responseBody = response.getBody();
+            log.debug("Response body: {}", responseBody);
+            JsonNode jsonNode = objectMapper.readTree(responseBody);
+
+            // Check for API error
+            if (jsonNode.has("err") && jsonNode.get("err").asInt() != 0) {
+                log.error("Zing MP3 API error: {}", jsonNode.get("msg").asText());
+                throw new ZingMp3Service.ZingMp3Exception("Zing MP3 API error: " + jsonNode.get("msg").asText());
+            }
+
+            // Extract data
+            JsonNode data = jsonNode.has("data") ? jsonNode.get("data") : null;
+            if (data == null || !data.has("songs") || !data.get("songs").isArray() || data.get("songs").isEmpty()) {
+                log.info("No matching songs found for query: {}", searchQuery);
+                return null;
+            }
+
+            // Return the ID of the first matching song
+            String zingId = data.get("songs").get(0).get("encodeId").asText("");
+            log.info("Converted Spotify ID {} to Zing MP3 ID: {}", spotifyId, zingId);
+            return zingId;
+
+        } catch (ZingMp3Service.ZingMp3Exception e) {
+            log.error("Error converting Spotify ID {}: {}", spotifyId, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Unexpected error converting Spotify ID {}: {}", spotifyId, e.getMessage(), e);
+            throw new ZingMp3Service.ZingMp3Exception("Error converting Spotify ID to Zing MP3 ID: " + spotifyId, e);
+        }
+    }
+
+    /**
+     * Chuẩn hóa chuỗi: bỏ dấu, viết thường
+     */
+    private String normalizeString(String input) {
+        if (input == null) return "";
+        return Normalizer.normalize(input, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toLowerCase()
+                .replaceAll("[^a-z0-9\\s]", "")
+                .trim();
+    }
+
 }
  
