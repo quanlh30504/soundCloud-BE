@@ -40,3 +40,10 @@ ytdlp:
   executable-path: ${YTDLP_EXECUTABLE_PATH:}
 ffmpeg:
   executable-path: ${FFMPEG_EXECUTABLE_PATH:}
+
+zing-mp3:
+  BASE_URL: https://zingmp3.vn
+  API_KEY: X5BM3w8N7MKozC0B85o4KMlzLZKhV00y
+  SECRET_KEY: acOrvUS15XRW2o9JksiK1KgQ6Vbds8ZW
+  VERSION: 1.13.13
+  COOKIE_PATH: ZingMp3.json
