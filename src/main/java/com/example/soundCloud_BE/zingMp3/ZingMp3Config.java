@@ -3,6 +3,8 @@ package com.example.soundCloud_BE.zingMp3;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.hc.client5.http.config.RequestConfig;
 import org.apache.hc.core5.util.Timeout;
 import org.springframework.context.annotation.Configuration;
@@ -88,7 +90,9 @@ public class ZingMp3Config {
     public ObjectMapper objectMapper() {
         return new ObjectMapper()
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                .configure(JsonParser.Feature.AUTO_CLOSE_SOURCE, true);
+                .configure(JsonParser.Feature.AUTO_CLOSE_SOURCE, true)
+                .registerModule(new JavaTimeModule()) // Thêm module hỗ trợ Java 8 Date/Time
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS); // Serialize LocalDateTime thành chuỗi ISO
     }
 
 

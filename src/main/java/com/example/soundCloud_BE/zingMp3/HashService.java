@@ -90,6 +90,19 @@ public class HashService {
         );
     }
 
+    public String hashParamWithCount(String path, String count){
+        return getHmac512(
+                path + getHash256(String.format("count=%sctime=%sversion=%s",count, CTIME, VERSION)),
+                SECRET_KEY
+        );
+    }
+    public String hashParamWithType(String path, String type){
+        return getHmac512(
+                path + getHash256(String.format("ctime=%stype=%sversion=%s", CTIME, type, VERSION)),
+                SECRET_KEY
+        );
+    }
+
 
 
 

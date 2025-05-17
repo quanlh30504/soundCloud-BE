@@ -132,11 +132,11 @@ public class SpotifyController {
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping("/history/tracks/{trackId}")
+    @DeleteMapping("/history/tracks/{zingId}")
     public ResponseEntity<Void> removeFromHistory(
-            @PathVariable Integer trackId,
+            @PathVariable String zingId,
             @RequestHeader("X-Firebase-Uid") String firebaseUid) {
-        listeningHistoryService.removeFromHistory(firebaseUid, trackId);
+        listeningHistoryService.removeFromHistory(firebaseUid, zingId);
         return ResponseEntity.ok().build();
     }
 

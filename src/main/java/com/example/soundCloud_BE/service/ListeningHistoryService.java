@@ -30,11 +30,11 @@ public class ListeningHistoryService {
     private final TrackRepository tracksRepository;
 
     @Transactional
-    public ListeningHistoryDTO addToHistory(String firebaseUid, String spotifyId) {
+    public ListeningHistoryDTO addToHistory(String firebaseUid, String songId) {
         User user = userRepository.findByFirebaseUid(firebaseUid)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
         
-        Tracks track = tracksRepository.findBySpotifyId(spotifyId)
+        Tracks track = tracksRepository.findBySpotifyId(songId)
                 .orElseThrow(() -> new EntityNotFoundException("Track not found"));
 
         ListeningHistory history = listeningHistoryRepository.findByUserAndTrack(user, track)
@@ -81,11 +81,11 @@ public class ListeningHistoryService {
     }
 
     @Transactional
-    public void removeFromHistory(String firebaseUid, Integer trackId) {
+    public void removeFromHistory(String firebaseUid, String songId) {
         User user = userRepository.findByFirebaseUid(firebaseUid)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
         
-        Tracks track = tracksRepository.findById(trackId)
+        Tracks track = tracksRepository.findBySpotifyId(songId)
                 .orElseThrow(() -> new EntityNotFoundException("Track not found"));
         
         listeningHistoryRepository.deleteByUserAndTrack(user, track);

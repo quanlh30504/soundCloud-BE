@@ -4,6 +4,9 @@ import com.example.soundCloud_BE.model.Tracks;
 import com.example.soundCloud_BE.repository.TrackRepository;
 import com.example.soundCloud_BE.zingMp3.Dto.*;
 import com.example.soundCloud_BE.zingMp3.Dto.Chart.ChartHomeData;
+import com.example.soundCloud_BE.zingMp3.Dto.HomeData.HubDetail;
+import com.example.soundCloud_BE.zingMp3.Dto.HomeData.RecommendSongs;
+import com.example.soundCloud_BE.zingMp3.Dto.HomeData.Top100;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -409,6 +412,7 @@ public class ZingMp3ApiService {
         return data;
     }
 
+
     @Transactional
     public SyncResponse syncSongToDatabase(String songId) {
         if (songId == null || songId.trim().isEmpty()) {
@@ -485,9 +489,155 @@ public class ZingMp3ApiService {
     }
 
 
+    // Các hàm lấy thông tin trang home
+
+    // Get top100
+    public List<Top100> getTop100() {
+        String path = "/api/v2/page/get/top-100";
+        String sig = hashService.hashParamNoId(path);
+
+        Map<String, String> params = new HashMap<>();
+        params.put("sig", sig);
+
+        ApiResponse<List<Top100>> response = requestZingMp3(
+                path,
+                params,
+                new ParameterizedTypeReference<ApiResponse<List<Top100>>>() {}
+        );
+
+        if (response == null || response.getErr() != 0) {
+            String errorMsg = response != null ? response.getMsg() : "No response";
+            log.error("Failed to get home data: {}", errorMsg);
+            throw new RuntimeException("Failed to get home data: " + errorMsg);
+        }
+
+        List<Top100> data = response.getData();
+        if (data == null) {
+            log.error("No home data available");
+            throw new RuntimeException("No home data available");
+        }
+
+        return data;
+    }
 
 
+    //Get hub-detail . Ở đây lấy hub chill thư giãn (id hub: IWZ9Z0CI)
+    public <T> HubDetail<T> getHubDetail (String hubId) {
+        String path = "/api/v2/page/get/hub-detail";
+        String sig = hashService.hashParamWithId(path, hubId);
 
+        Map<String, String> params = new HashMap<>();
+        params.put("id", hubId);
+        params.put("sig", sig);
+
+        ApiResponse<HubDetail<T>> response = requestZingMp3(
+                path,
+                params,
+                new ParameterizedTypeReference<ApiResponse<HubDetail<T>>>() {}
+        );
+
+        if (response == null || response.getErr() != 0) {
+            String errorMsg = response != null ? response.getMsg() : "No response";
+            log.error("Failed to get home data: {}", errorMsg);
+            throw new RuntimeException("Failed to get home data: " + errorMsg);
+        }
+
+        HubDetail<T> data = response.getData();
+        if (data == null) {
+            log.error("No home data available");
+            throw new RuntimeException("No home data available");
+        }
+
+        return data;
+    }
+
+    //Get recommend songs
+    public List<SongData> getRecommendSongs() {
+        String path = "/api/v2/song/get/section-song-station";
+        String sig = hashService.hashParamWithCount(path, "20");
+
+        Map<String, String> params = new HashMap<>();
+        params.put("count", "20");
+        params.put("sig", sig);
+
+        ApiResponse<RecommendSongs> response = requestZingMp3(
+                path,
+                params,
+                new ParameterizedTypeReference<ApiResponse<RecommendSongs>>() {}
+        );
+
+        if (response == null || response.getErr() != 0) {
+            String errorMsg = response != null ? response.getMsg() : "No response";
+            log.error("Failed to get home data: {}", errorMsg);
+            throw new RuntimeException("Failed to get home data: " + errorMsg);
+        }
+
+        List<SongData> data = response.getData().getItems();
+        if (data == null) {
+            log.error("No home data available");
+            throw new RuntimeException("No home data available");
+        }
+
+        return data;
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<?> getNewRelease(String type) {
+        String path = "/api/v2/chart/get/new-release";
+        String sig = hashService.hashParamWithType(path, type);
+
+        Map<String, String> params = new HashMap<>();
+        params.put("type", type);
+        params.put("sig", sig);
+
+        // Xử lý theo từng type
+        if ("song".equalsIgnoreCase(type)) {
+            ApiResponse<List<SongData>> response = requestZingMp3(
+                    path,
+                    params,
+                    new ParameterizedTypeReference<ApiResponse<List<SongData>>>() {}
+            );
+
+            if (response == null || response.getErr() != 0) {
+                String errorMsg = response != null ? response.getMsg() : "No response";
+                log.error("Failed to get new release songs: {}", errorMsg);
+                throw new RuntimeException("Failed to get new release songs: " + errorMsg);
+            }
+
+            List<SongData> data = response.getData();
+            if (data == null) {
+                log.error("No new release song data available");
+                throw new RuntimeException("No new release song data available");
+            }
+
+            return data;
+
+        } else if ("album".equalsIgnoreCase(type)) {
+            ApiResponse<List<Album>> response = requestZingMp3(
+                    path,
+                    params,
+                    new ParameterizedTypeReference<ApiResponse<List<Album>>>() {}
+            );
+
+            if (response == null || response.getErr() != 0) {
+                String errorMsg = response != null ? response.getMsg() : "No response";
+                log.error("Failed to get new release albums: {}", errorMsg);
+                throw new RuntimeException("Failed to get new release albums: " + errorMsg);
+            }
+
+            List<Album> data = response.getData();
+            if (data == null) {
+                log.error("No new release album data available");
+                throw new RuntimeException("No new release album data available");
+            }
+
+            return data;
+
+        } else {
+            log.error("Invalid type: {}. Must be 'song' or 'album'", type);
+            throw new IllegalArgumentException("Invalid type: " + type + ". Must be 'song' or 'album'");
+        }
+    }
 
 
 

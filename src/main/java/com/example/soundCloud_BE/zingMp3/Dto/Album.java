@@ -31,6 +31,4 @@ public class Album {
 
     private Items<SongData> song;
 
-
-
 }
