@@ -2,12 +2,14 @@ package com.example.soundCloud_BE.zingMp3;
 
 
 import com.example.soundCloud_BE.service.SpotifyService;
+import com.example.soundCloud_BE.zingMp3.Dto.SyncResponse;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-
+@Slf4j
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/zingMp3")
@@ -73,6 +75,21 @@ public class ZingMp3Controller {
         return ResponseEntity.ok(zingMp3ApiService.getChartHome());
     }
 
+
+    @PostMapping("/sync/{zingId}")
+    public ResponseEntity<SyncResponse> syncSong(@PathVariable String zingId) {
+        try {
+            SyncResponse response = zingMp3ApiService.syncSongToDatabase(zingId);
+            if (response.isSuccess()) {
+                return ResponseEntity.ok(response);
+            } else {
+                return ResponseEntity.badRequest().body(response);
+            }
+        } catch (Exception e) {
+            log.error("Lỗi khi đồng bộ bài hát với ID {}: {}", zingId, e.getMessage());
+            return ResponseEntity.internalServerError().body(SyncResponse.failure("Internal server error"));
+        }
+    }
 
 
 

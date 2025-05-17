@@ -69,15 +69,6 @@ public class ListeningHistoryService {
                 .map(ListeningHistoryDTO::fromEntity);
     }
 
-    public Page<TrackDTO> getMostPlayedTracks(String firebaseUid, Pageable pageable) {
-        User user = userRepository.findByFirebaseUid(firebaseUid)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
-        
-        return listeningHistoryRepository.findMostPlayedTracks(user, pageable)
-                .map(ListeningHistoryDTO::fromEntity)
-                .map(ListeningHistoryDTO::getTrack);
-    }
-
     @Transactional
     public void clearHistory(String firebaseUid) {
         User user = userRepository.findByFirebaseUid(firebaseUid)

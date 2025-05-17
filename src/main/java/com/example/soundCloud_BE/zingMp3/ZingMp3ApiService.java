@@ -1,7 +1,10 @@
 package com.example.soundCloud_BE.zingMp3;
 
+import com.example.soundCloud_BE.model.Tracks;
+import com.example.soundCloud_BE.repository.TrackRepository;
 import com.example.soundCloud_BE.zingMp3.Dto.*;
 import com.example.soundCloud_BE.zingMp3.Dto.Chart.ChartHomeData;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,12 +16,11 @@ import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import javax.sound.midi.Track;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.LocalDateTime;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -39,6 +41,10 @@ public class ZingMp3ApiService {
 
     @Autowired
     private RestTemplate restTemplate;
+
+    @Autowired
+    private TrackRepository trackRepository;
+
 
     public String getCookie() {
         ResponseEntity<String> response = restTemplate.exchange(
@@ -403,6 +409,80 @@ public class ZingMp3ApiService {
         return data;
     }
 
+    @Transactional
+    public SyncResponse syncSongToDatabase(String songId) {
+        if (songId == null || songId.trim().isEmpty()) {
+            log.error("songId is null or empty");
+            return SyncResponse.failure("Invalid songId");
+        }
+
+        Optional<Tracks> optionalTrack = trackRepository.findBySpotifyId(songId);
+        StreamData streamData = null;
+        Tracks track;
+
+        if (optionalTrack.isPresent()) {
+            log.info("Bài hát đã tồn tại trong database, kiểm tra và cập nhật...");
+            track = optionalTrack.get();
+            streamData = getStreamDataIfNeeded(track, streamData);
+
+            updateStreamUrls(track, streamData);
+            track.setUpdatedAt(LocalDateTime.now());
+            trackRepository.save(track);
+        } else {
+            log.info("Bài hát chưa tồn tại trong database, thêm mới...");
+            SongData songData = getSongInfo(songId);
+            if (songData == null) {
+                log.error("Không tìm thấy thông tin bài hát với ID: {}", songId);
+                return SyncResponse.failure("Song info not found");
+            }
+
+            streamData = getStreamUrl(songId);
+            track = Tracks.builder()
+                    .spotifyId(songId)
+                    .title(songData.getTitle())
+                    .artists(songData.getArtistsNames())
+                    .coverUrl(songData.getThumbnail())
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .build();
+
+            updateStreamUrls(track, streamData);
+            trackRepository.save(track);
+        }
+
+        return SyncResponse.success(songId);
+    }
+
+    private StreamData getStreamDataIfNeeded(Tracks track, StreamData streamData) {
+        if (streamData == null && (isStreamUrlEmpty(track.getStreamUrl128()) || isStreamUrlEmpty(track.getStreamUrl320()))) {
+            return getStreamUrl(track.getSpotifyId());
+        }
+        return streamData;
+    }
+
+    private void updateStreamUrls(Tracks track, StreamData streamData) {
+        if (isStreamUrlEmpty(track.getStreamUrl128()) && streamData != null) {
+            String url128 = streamData.get_128();
+            if (url128 != null && !url128.isEmpty() && !url128.equals("VIP")) {
+                track.setStreamUrl128(url128);
+            } else {
+                log.error("Không tìm thấy streamUrl128 cho bài hát với ID: {}", track.getSpotifyId());
+            }
+        }
+
+        if (isStreamUrlEmpty(track.getStreamUrl320()) && streamData != null) {
+            String url320 = streamData.get_320();
+            if (url320 != null && !url320.isEmpty() && !url320.equals("VIP")) {
+                track.setStreamUrl320(url320); // Sửa lỗi gán sai cột
+            } else {
+                log.error("Không tìm thấy streamUrl320 cho bài hát với ID: {}", track.getSpotifyId());
+            }
+        }
+    }
+
+    private boolean isStreamUrlEmpty(String url) {
+        return url == null || url.trim().isEmpty();
+    }
 
 
 

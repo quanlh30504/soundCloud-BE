@@ -24,6 +24,7 @@ public class SongService {
     private final TrackRepository trackRepository;
     private final ZingMp3Service zingMp3Service;
 
+
     @Transactional
     public TrackDTO getSongInfo(String spotifyId) {
         try {
@@ -36,7 +37,7 @@ public class SongService {
 
             // 2. Check if track exists in database
             Optional<Tracks> existingSong = trackRepository.findBySpotifyId(spotifyId);
-            
+
             if (existingSong.isPresent()) {
                 // 3a. If track exists, update filePath in TrackDTO
                 Tracks tracks = existingSong.get();
@@ -45,8 +46,8 @@ public class SongService {
                     track.setDownloadStatus(tracks.getDownloadStatus());
                 }
 
-                if (tracks.getStreamUrl() != null && !tracks.getStreamUrl().isEmpty()) {
-                    track.setStreamUrl(tracks.getStreamUrl());
+                if (tracks.getStreamUrl128() != null && !tracks.getStreamUrl128().isEmpty()) {
+                    track.setStreamUrl(tracks.getStreamUrl128());
                 } else {
                     final String zingId = spotifyService.convertSpotifyIdToZingId(spotifyId);
                     if (zingId != null) {
@@ -95,7 +96,7 @@ public class SongService {
                     String streamUrl = zingMp3Service.getStreamingUrl(zingId);
                     if (streamUrl != null) {
                         track.setStreamUrl(streamUrl);
-                        newTracks.setStreamUrl(streamUrl);
+                        newTracks.setStreamUrl128(streamUrl);
                     } else {
                         log.error("Failed to get streaming URL for Zing ID: {}", zingId);
                     }
@@ -112,57 +113,57 @@ public class SongService {
         }
     }
 
-    @Transactional
-    protected void downloadAndUpdateSong(Integer songId, String spotifyId) {
-        int maxRetries = 3;
-        int currentRetry = 0;
-        long delay = 1000; // 1 second
-
-        while (currentRetry < maxRetries) {
-            try {
-                // Get fresh entity in new transaction
-                Tracks tracks = trackRepository.findById(songId)
-                    .orElseThrow(() -> new RuntimeException("Song not found: " + songId));
-
-                // Download track audio
-                CompletableFuture<DownloadResult> downloadFuture = spotifyService.downloadTrackAudio(spotifyId);
-                
-                try {
-                    // Wait for download to complete with timeout
-                    DownloadResult result = downloadFuture.get(5, TimeUnit.MINUTES);
-                    
-                    if (result != null && result.getFilePath() != null && !result.getFilePath().isEmpty()) {
-                        String filePath = result.getFilePath();
-                        log.info("Download completed. File path: {}", filePath);
-                        
-                        tracks.setFilePath(filePath);
-                        tracks.setDownloadStatus("completed");
-                        trackRepository.save(tracks);
-                        log.info("Successfully downloaded and saved track: {}", spotifyId);
-                        return;
-                    } else {
-                        tracks.setDownloadStatus("failed");
-                        trackRepository.save(tracks);
-                        log.error("Failed to download track: {}", spotifyId);
-                        throw new RuntimeException("Download failed for track: " + spotifyId);
-                    }
-                } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                    log.error("Error waiting for download to complete: {}", spotifyId, e);
-                    throw new RuntimeException("Download timeout or interrupted: " + e.getMessage());
-                }
-            } catch (Exception e) {
-                currentRetry++;
-                if (currentRetry == maxRetries) {
-                    log.error("Failed to download track after {} retries: {}", maxRetries, spotifyId, e);
-                    throw e;
-                }
-                try {
-                    Thread.sleep(delay * currentRetry);
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                    throw new RuntimeException("Download interrupted", ie);
-                }
-            }
-        }
-    }
+//    @Transactional
+//    protected void downloadAndUpdateSong(Integer songId, String spotifyId) {
+//        int maxRetries = 3;
+//        int currentRetry = 0;
+//        long delay = 1000; // 1 second
+//
+//        while (currentRetry < maxRetries) {
+//            try {
+//                // Get fresh entity in new transaction
+//                Tracks tracks = trackRepository.findById(songId)
+//                    .orElseThrow(() -> new RuntimeException("Song not found: " + songId));
+//
+//                // Download track audio
+//                CompletableFuture<DownloadResult> downloadFuture = spotifyService.downloadTrackAudio(spotifyId);
+//
+//                try {
+//                    // Wait for download to complete with timeout
+//                    DownloadResult result = downloadFuture.get(5, TimeUnit.MINUTES);
+//
+//                    if (result != null && result.getFilePath() != null && !result.getFilePath().isEmpty()) {
+//                        String filePath = result.getFilePath();
+//                        log.info("Download completed. File path: {}", filePath);
+//
+//                        tracks.setFilePath(filePath);
+//                        tracks.setDownloadStatus("completed");
+//                        trackRepository.save(tracks);
+//                        log.info("Successfully downloaded and saved track: {}", spotifyId);
+//                        return;
+//                    } else {
+//                        tracks.setDownloadStatus("failed");
+//                        trackRepository.save(tracks);
+//                        log.error("Failed to download track: {}", spotifyId);
+//                        throw new RuntimeException("Download failed for track: " + spotifyId);
+//                    }
+//                } catch (InterruptedException | ExecutionException | TimeoutException e) {
+//                    log.error("Error waiting for download to complete: {}", spotifyId, e);
+//                    throw new RuntimeException("Download timeout or interrupted: " + e.getMessage());
+//                }
+//            } catch (Exception e) {
+//                currentRetry++;
+//                if (currentRetry == maxRetries) {
+//                    log.error("Failed to download track after {} retries: {}", maxRetries, spotifyId, e);
+//                    throw e;
+//                }
+//                try {
+//                    Thread.sleep(delay * currentRetry);
+//                } catch (InterruptedException ie) {
+//                    Thread.currentThread().interrupt();
+//                    throw new RuntimeException("Download interrupted", ie);
+//                }
+//            }
+//        }
+//    }
 }

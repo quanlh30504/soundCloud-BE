@@ -126,30 +126,6 @@ public class SpotifyController {
         return ResponseEntity.ok(history);
     }
 
-    @GetMapping("/history/recent")
-    public ResponseEntity<Page<ListeningHistoryDTO>> getRecentHistory(
-            @RequestHeader("X-Firebase-Uid") String firebaseUid,
-            @RequestParam(defaultValue = "24") int hours,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        
-        LocalDateTime since = LocalDateTime.now().minusHours(hours);
-        Pageable pageable = PageRequest.of(page, size);
-        Page<ListeningHistoryDTO> history = listeningHistoryService.getRecentHistory(firebaseUid, since, pageable);
-        return ResponseEntity.ok(history);
-    }
-
-    @GetMapping("/history/most-played")
-    public ResponseEntity<Page<TrackDTO>> getMostPlayedTracks(
-            @RequestHeader("X-Firebase-Uid") String firebaseUid,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        
-        Pageable pageable = PageRequest.of(page, size);
-        Page<TrackDTO> tracks = listeningHistoryService.getMostPlayedTracks(firebaseUid, pageable);
-        return ResponseEntity.ok(tracks);
-    }
-
     @DeleteMapping("/history")
     public ResponseEntity<Void> clearHistory(@RequestHeader("X-Firebase-Uid") String firebaseUid) {
         listeningHistoryService.clearHistory(firebaseUid);
@@ -164,23 +140,4 @@ public class SpotifyController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/categories")
-    public ResponseEntity<List<CategoryDTO>> getCategories() {
-        try {
-            List<CategoryDTO> categories = spotifyService.getCategories();
-            return ResponseEntity.ok(categories);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(null);
-        }
-    }
-
-    @GetMapping("/categories/{categoryId}/playlists")
-    public ResponseEntity<List<PlaylistDTO>> getPlaylistsByCategory(@PathVariable String categoryId) {
-        try {
-            List<PlaylistDTO> playlists = spotifyService.getPlaylistsByCategory(categoryId);
-            return ResponseEntity.ok(playlists);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(null);
-        }
-    }
 } 

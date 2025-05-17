@@ -83,8 +83,9 @@ public class TrackDTO {
                         : new ArrayList<>()) // Splits and trims the artist string to map to the 'artists' field
                 .filePath(track.getFilePath()) // Maps 'filePath'
                 .downloadStatus(track.getDownloadStatus()) // Maps 'downloadStatus'
-                .streamUrl(track.getStreamUrl()) // Maps 'streamUrl'
+                .streamUrl(track.getStreamUrl128()) // Maps 'streamUrl'
                 .build();
     }
+
     
 } 

@@ -39,8 +39,11 @@ public class Tracks {
     @Column(name = "download_status")
     private String downloadStatus = "pending";
 
-    @Column(name = "stream_url", columnDefinition = "TEXT")
-    private String streamUrl;
+    @Column(name = "stream_url_128", columnDefinition = "TEXT")
+    private String streamUrl128;
+
+    @Column(name = "stream_url_320", columnDefinition = "TEXT")
+    private String streamUrl320;
 
     @Column(name = "created_at")
     @CreationTimestamp
