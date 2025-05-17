@@ -639,6 +639,38 @@ public class ZingMp3ApiService {
         }
     }
 
+    // BXH nhạc mới
+    public Top100 getNewReleaseChart(){
+        String path = "/api/v2/page/get/newrelease-chart";
+        String sig = hashService.hashParamNoId(path);
+
+        Map<String, String> params = new HashMap<>();
+        params.put("sig", sig);
+
+        ApiResponse<Top100> response = requestZingMp3(
+                path,
+                params,
+                new ParameterizedTypeReference<ApiResponse<Top100>>() {}
+        );
+
+        if (response == null || response.getErr() != 0) {
+            String errorMsg = response != null ? response.getMsg() : "No response";
+            log.error("Failed to get new release chart: {}", errorMsg);
+            throw new RuntimeException("Failed to get new release chart: " + errorMsg);
+        }
+
+        Top100 data = response.getData();
+        if (data == null) {
+            log.error("No new release chart data available");
+            throw new RuntimeException("No new release chart data available");
+        }
+
+        return data;
+    }
+
+
+
+
 
 
 

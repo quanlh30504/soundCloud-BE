@@ -156,4 +156,10 @@ public class ZingMp3Controller {
         return ResponseEntity.ok(zingMp3ApiService.getNewRelease(type));
     }
 
+    //Get BXH nhạc mới (Top 100) song
+    @GetMapping("/home/new-release/top100")
+    public ResponseEntity<?> getNewReleaseTop100() {
+        return ResponseEntity.ok(zingMp3ApiService.getNewReleaseChart());
+    }
+
 }

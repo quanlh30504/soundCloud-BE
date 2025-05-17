@@ -11,6 +11,8 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @NoArgsConstructor
 public class Top100 {
+    private String banner;
+    private String type;
     private String sectionType;
     private String viewType;
     private String title;
