@@ -63,6 +63,22 @@ public class ZingMp3Controller {
         return ResponseEntity.ok(zingMp3ApiService.searchMulti(query));
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<?> search(@RequestParam(value = "type") HashService.SearchType type,
+                                    @RequestParam(value = "query") String query,
+                                    @RequestParam(value = "page", defaultValue = "1") int page,
+                                    @RequestParam(value = "count", defaultValue = "18") int count) {
+        return switch (type) {
+            case song ->
+                    ResponseEntity.ok(zingMp3ApiService.searchSong(query, String.valueOf(page), String.valueOf(count)));
+            case playlist ->
+                    ResponseEntity.ok(zingMp3ApiService.searchPlaylist(query, String.valueOf(page), String.valueOf(count)));
+            case artist ->
+                    ResponseEntity.ok(zingMp3ApiService.searchArtist(query, String.valueOf(page), String.valueOf(count)));
+            default -> ResponseEntity.badRequest().body("Invalid search type");
+        };
+    }
+
     @GetMapping("/artist/info")
     public ResponseEntity<?> getArtistInfo(@RequestParam("alias") String alias) {
         return ResponseEntity.ok(zingMp3ApiService.getArtistInfo(alias));
@@ -71,7 +87,7 @@ public class ZingMp3Controller {
     @GetMapping("/artist/songs")
     public ResponseEntity<?> getSongsOfArtist(@RequestParam("artistId") String artistId,
                                               @RequestParam(value = "page", defaultValue = "1") int page,
-                                              @RequestParam(value = "count", defaultValue = "15") int count
+                                              @RequestParam(value = "count", defaultValue = "18") int count
     ) {
         return ResponseEntity.ok(zingMp3ApiService.getListArtistSong(artistId, String.valueOf(page), String.valueOf(count)));
     }

@@ -47,3 +47,4 @@ zing-mp3:
   SECRET_KEY: acOrvUS15XRW2o9JksiK1KgQ6Vbds8ZW
   VERSION: 1.13.13
   COOKIE_PATH: ZingMp3.json
+  COOKIE: ${COOKIE}
