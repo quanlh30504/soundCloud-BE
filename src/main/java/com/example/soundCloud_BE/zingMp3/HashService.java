@@ -2,6 +2,7 @@ package com.example.soundCloud_BE.zingMp3;
 
 
 import jdk.jfr.consumer.RecordedStackTrace;
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -103,12 +104,26 @@ public class HashService {
         );
     }
 
+    @Getter
+    public static enum SearchType {
+        artist("artist"),
+        playlist("playlist"),
+        video("video"),
+        song("song");
 
+        private final String type;
 
+        SearchType(String type) {
+            this.type = type;
+        }
 
+    }
 
-
-
-
+    public String hashParamSearch(SearchType searchType, String path, String page, String count){
+        return getHmac512(
+                path + getHash256(String.format("count=%sctime=%spage=%stype=%sversion=%s", count, CTIME, page, searchType.getType(), VERSION)),
+                SECRET_KEY
+        );
+    }
 
 }

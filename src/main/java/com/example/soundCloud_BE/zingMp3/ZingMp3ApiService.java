@@ -19,7 +19,6 @@ import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import javax.sound.midi.Track;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -39,6 +38,8 @@ public class ZingMp3ApiService {
     private String VERSION;
     @Value("${zing-mp3.COOKIE_PATH}")
     private String COOKIE_PATH;
+    @Value("${zing-mp3.COOKIE}")
+    private String COOKIE;
     @Autowired
     private HashService hashService;
 
@@ -66,8 +67,14 @@ public class ZingMp3ApiService {
         throw new RuntimeException("Không tìm thấy cookie.");
     }
 
+    public String getPremiumCookie() {
+        return COOKIE;
+    }
+
     public <T> ApiResponse<T> requestZingMp3(String path, Map<String, String> params, ParameterizedTypeReference<ApiResponse<T>> responseType) {
-        String cookie = getCookie();
+//        String cookie = getCookie();
+        String cookie = getPremiumCookie();
+        System.out.println("Cookie: " + cookie);
 
         // Xây dựng URL với các query params
         UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(BASE_URL + path)
@@ -217,6 +224,114 @@ public class ZingMp3ApiService {
         }
 
         SearchMultiResponse data = response.getData();
+        if (data == null) {
+            throw new RuntimeException("No stream data available");
+        }
+
+        return data;
+
+    }
+
+    //Search song
+    public SearchSongResponse searchSong(String query, String page, String count) {
+        if (query == null || query.trim().isEmpty()) {
+            log.error("Query cannot be null or empty");
+            throw new IllegalArgumentException("Query cannot be null or empty");
+        }
+
+        // Chuẩn hóa query: mã hóa URL
+        String encodedQuery = URLEncoder.encode(query.trim(), StandardCharsets.UTF_8);
+        log.info("Original query: {}, Encoded query: {}", query, encodedQuery);
+
+        String path = "/api/v2/search";
+        String sig = hashService.hashParamSearch(HashService.SearchType.song, path, page, count);
+        Map<String, String> params = new HashMap<>();
+        params.put("q", encodedQuery);
+        params.put("type", HashService.SearchType.song.getType());
+        params.put("page", page);
+        params.put("count", count);
+        params.put("sig", sig);
+
+        ApiResponse<SearchSongResponse> response = requestZingMp3(path, params, new ParameterizedTypeReference<ApiResponse<SearchSongResponse>>() {});
+
+        if (response == null || response.getErr() != 0) {
+            throw new RuntimeException("Failed to get stream data: " +
+                    (response != null ? response.getMsg() : "No response"));
+        }
+
+        SearchSongResponse data = response.getData();
+        if (data == null) {
+            throw new RuntimeException("No stream data available");
+        }
+
+        return data;
+
+    }
+
+    //Search song
+    public SearchPlaylistResponse searchPlaylist(String query, String page, String count) {
+        if (query == null || query.trim().isEmpty()) {
+            log.error("Query cannot be null or empty");
+            throw new IllegalArgumentException("Query cannot be null or empty");
+        }
+
+        // Chuẩn hóa query: mã hóa URL
+        String encodedQuery = URLEncoder.encode(query.trim(), StandardCharsets.UTF_8);
+        log.info("Original query: {}, Encoded query: {}", query, encodedQuery);
+
+        String path = "/api/v2/search";
+        String sig = hashService.hashParamSearch(HashService.SearchType.playlist, path, page, count);
+        Map<String, String> params = new HashMap<>();
+        params.put("q", encodedQuery);
+        params.put("type", HashService.SearchType.playlist.getType());
+        params.put("page", page);
+        params.put("count", count);
+        params.put("sig", sig);
+
+        ApiResponse<SearchPlaylistResponse> response = requestZingMp3(path, params, new ParameterizedTypeReference<ApiResponse<SearchPlaylistResponse>>() {});
+
+        if (response == null || response.getErr() != 0) {
+            throw new RuntimeException("Failed to get stream data: " +
+                    (response != null ? response.getMsg() : "No response"));
+        }
+
+        SearchPlaylistResponse data = response.getData();
+        if (data == null) {
+            throw new RuntimeException("No stream data available");
+        }
+
+        return data;
+
+    }
+
+    //Search song
+    public SearchArtistResponse searchArtist(String query, String page, String count) {
+        if (query == null || query.trim().isEmpty()) {
+            log.error("Query cannot be null or empty");
+            throw new IllegalArgumentException("Query cannot be null or empty");
+        }
+
+        // Chuẩn hóa query: mã hóa URL
+        String encodedQuery = URLEncoder.encode(query.trim(), StandardCharsets.UTF_8);
+        log.info("Original query: {}, Encoded query: {}", query, encodedQuery);
+
+        String path = "/api/v2/search";
+        String sig = hashService.hashParamSearch(HashService.SearchType.artist, path, page, count);
+        Map<String, String> params = new HashMap<>();
+        params.put("q", encodedQuery);
+        params.put("type", HashService.SearchType.artist.getType());
+        params.put("page", page);
+        params.put("count", count);
+        params.put("sig", sig);
+
+        ApiResponse<SearchArtistResponse> response = requestZingMp3(path, params, new ParameterizedTypeReference<ApiResponse<SearchArtistResponse>>() {});
+
+        if (response == null || response.getErr() != 0) {
+            throw new RuntimeException("Failed to get stream data: " +
+                    (response != null ? response.getMsg() : "No response"));
+        }
+
+        SearchArtistResponse data = response.getData();
         if (data == null) {
             throw new RuntimeException("No stream data available");
         }
