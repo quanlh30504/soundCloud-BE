@@ -427,11 +427,18 @@ public class ZingMp3ApiService {
         if (optionalTrack.isPresent()) {
             log.info("Bài hát đã tồn tại trong database, kiểm tra và cập nhật...");
             track = optionalTrack.get();
-            streamData = getStreamDataIfNeeded(track, streamData);
 
-            updateStreamUrls(track, streamData);
-            track.setUpdatedAt(LocalDateTime.now());
-            trackRepository.save(track);
+            if (track.getStreamUrl128() != null && !track.getStreamUrl128().isEmpty()) {
+                streamData = getStreamUrl(songId);
+                track.setStreamUrl128(streamData.get_128());
+                track.setUpdatedAt(LocalDateTime.now());
+                trackRepository.save(track);
+            }
+//            streamData = getStreamDataIfNeeded(track, streamData);
+//            updateStreamUrls(track, streamData);
+//            track.setUpdatedAt(LocalDateTime.now());
+//            trackRepository.save(track);
+
         } else {
             log.info("Bài hát chưa tồn tại trong database, thêm mới...");
             SongData songData = getSongInfo(songId);
@@ -486,6 +493,40 @@ public class ZingMp3ApiService {
 
     private boolean isStreamUrlEmpty(String url) {
         return url == null || url.trim().isEmpty();
+    }
+
+
+    @Transactional
+    public SyncResponse syncSongToDatabaseWithBody(String songId, SongData songData) {
+        if (songId == null || songId.trim().isEmpty()) {
+            log.error("songId is null or empty");
+            return SyncResponse.failure("Invalid songId");
+        }
+
+        Optional<Tracks> optionalTrack = trackRepository.findBySpotifyId(songId);
+        Tracks track;
+
+        if (!optionalTrack.isPresent()) {
+            log.info("Bài hát chưa tồn tại trong database, thêm mới...");
+            if (songData == null) {
+                log.error("Không tìm thấy thông tin bài hát với ID: {}", songId);
+                return SyncResponse.failure("Song info not found");
+            }
+
+            track = Tracks.builder()
+                    .spotifyId(songId)
+                    .title(songData.getTitle())
+                    .artists(songData.getArtistsNames())
+                    .coverUrl(songData.getThumbnail())
+                    .duration(songData.getDuration())
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
+                    .build();
+
+            trackRepository.save(track);
+        }
+
+        return SyncResponse.success(songId);
     }
 
 

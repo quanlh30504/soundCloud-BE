@@ -45,6 +45,9 @@ public class Tracks {
     @Column(name = "stream_url_320", columnDefinition = "TEXT")
     private String streamUrl320;
 
+    @Column(name = "duration")
+    private Integer duration;
+
     @Column(name = "created_at")
     @CreationTimestamp
     private LocalDateTime createdAt;

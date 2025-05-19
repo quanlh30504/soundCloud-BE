@@ -13,6 +13,7 @@ import java.util.List;
 @Getter
 @Setter
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Playlists {
@@ -32,6 +33,15 @@ public class Playlists {
 
     @Column(name = "is_public")
     private Boolean isPublic = false;
+
+    @Column(name = "thumbnail")
+    private String thumbnail;
+
+    @Column(name = "is_external_playlist")
+    private Boolean isExternalPlaylist = false;
+
+    @Column(name = "external_playlist_id")
+    private String externalPlaylistId;
 
     @Column(name = "created_at")
     @CreationTimestamp

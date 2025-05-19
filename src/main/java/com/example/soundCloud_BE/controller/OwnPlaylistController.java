@@ -87,4 +87,21 @@ public class OwnPlaylistController {
         Page<TrackDTO> tracks = ownPlaylistService.getPlaylistTracks(playlistId, pageable);
         return ResponseEntity.ok(tracks);
     }
-} 
+
+    @PostMapping("/from-external-playlist/{externalPlaylistId}")
+    public ResponseEntity<PlaylistDTO> createExternalPlaylist(
+            @RequestHeader("X-Firebase-Uid") String firebaseUid,
+            @PathVariable String externalPlaylistId) {
+        PlaylistDTO playlist = ownPlaylistService.createPlaylistFromExternal(firebaseUid, externalPlaylistId);
+        return ResponseEntity.ok(playlist);
+    }
+
+    @GetMapping("/exist-external-playlist/{externalPlaylistId}")
+    public ResponseEntity<Boolean> checkExistExternalPlaylist(
+            @RequestHeader("X-Firebase-Uid") String firebaseUid,
+            @PathVariable String externalPlaylistId) {
+        Boolean exists = ownPlaylistService.checkExistExternalPlaylist(firebaseUid, externalPlaylistId);
+        return ResponseEntity.ok(exists);
+    }
+
+}

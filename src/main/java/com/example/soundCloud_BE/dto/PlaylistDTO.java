@@ -30,8 +30,10 @@ public class PlaylistDTO {
     private String spotifyUri;
     private String spotifyUrl;
     private Boolean isPublic;
+    private Boolean isExternalPlaylist;
+    private String externalPlaylistId;
     private Boolean collaborative;
-
+    private String thumbnail;
 
     public static PlaylistDTO fromPlaylist(Playlist playlist) {
         return PlaylistDTO.builder()
@@ -78,6 +80,9 @@ public class PlaylistDTO {
                         : Collections.emptyList()) // Danh sách bài hát rỗng nếu không có
                 .totalTracks(playlists.getTracks() != null ? playlists.getTracks().size() : 0) // Tổng bài hát
                 .isPublic(playlists.getIsPublic()) // Kiểm tra tính công khai
+                .isExternalPlaylist(playlists.getIsExternalPlaylist()) // Kiểm tra Playlist bên ngoài
+                .externalPlaylistId(playlists.getExternalPlaylistId()) // ID Playlist bên ngoài
+                .thumbnail(playlists.getThumbnail()) // Ảnh đại diện Playlist
                 .build();
     }
 } 
