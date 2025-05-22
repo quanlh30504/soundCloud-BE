@@ -46,6 +46,9 @@ public class OwnPlaylistService {
             throw new IllegalArgumentException("Playlist name cannot be empty");
         }
 
+        if (request.getName().equals("SYS_LIKED_TRACKS")) {
+            throw new IllegalStateException("You cannot create a playlist with this name");
+        }
 
         if (request.isExternalPlaylist() ) {
             Optional<Playlists> existingPlaylist = playlistRepository.findByExternalPlaylistId(request.getExternalPlaylistId(), user.getId());
@@ -121,6 +124,10 @@ public class OwnPlaylistService {
         if (!playlists.getUser().getFirebaseUid().equals(firebaseUid)) {
             throw new IllegalStateException("You don't have permission to delete this playlist");
         }
+
+        if (playlists.getName().equals("SYS_LIKED_TRACKS")) {
+            throw new IllegalStateException("You cannot delete the system playlist");
+        }
         
         playlistRepository.delete(playlists);
     }
@@ -193,4 +200,99 @@ public class OwnPlaylistService {
         return false;
     }
 
+
+    public void createLikedTracks(String firebaseUid) {
+        User user = userRepository.findByFirebaseUid(firebaseUid)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        Playlists playlists = new Playlists();
+        playlists.setName("SYS_LIKED_TRACKS");
+        playlists.setUser(user);
+        playlists.setIsPublic(false);
+
+        playlistRepository.save(playlists);
+    }
+
+    public Page<TrackDTO> getLikedTracks(String firebaseUid, Pageable pageable) {
+        User user = userRepository.findByFirebaseUid(firebaseUid)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        Playlists playlist = playlistRepository.findByNameAndUser("SYS_LIKED_TRACKS", user)
+                .orElse(null);
+
+        if (playlist == null) {
+            createLikedTracks(firebaseUid);
+            playlist = playlistRepository.findByNameAndUser("SYS_LIKED_TRACKS", user)
+                    .orElseThrow(() -> new EntityNotFoundException("Playlist not found"));
+        } else if (!playlist.getUser().getFirebaseUid().equals(firebaseUid)) {
+            throw new IllegalStateException("You don't have permission to access this playlist");
+        }
+
+        List<TrackDTO> tracks = playlist.getTracks().stream().map(TrackDTO::fromEntity).toList();
+
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), tracks.size());
+        List<TrackDTO> tracksPage = tracks.subList(start, end);
+
+        return new PageImpl<>(tracksPage, pageable, tracks.size());
+    }
+
+    @Transactional
+    public void addTrackToLikedTracks(String firebaseUid, String spotifyId) {
+        User user = userRepository.findByFirebaseUid(firebaseUid)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        Playlists playlist = playlistRepository.findByNameAndUser("SYS_LIKED_TRACKS", user)
+                .orElse(null);
+
+        if (playlist == null) {
+            createLikedTracks(firebaseUid);
+            playlist = playlistRepository.findByNameAndUser("SYS_LIKED_TRACKS", user)
+                    .orElseThrow(() -> new EntityNotFoundException("Playlist not found"));
+        } else if (!playlist.getUser().getFirebaseUid().equals(firebaseUid)) {
+            throw new IllegalStateException("You don't have permission to access this playlist");
+        }
+
+        Tracks track = tracksRepository.findBySpotifyId(spotifyId)
+                .orElse(null);
+        if (track == null) {
+            zingMp3ApiService.syncSongToDatabase(spotifyId);
+            track = tracksRepository.findBySpotifyId(spotifyId)
+                    .orElseThrow(() -> new EntityNotFoundException("Track not found"));
+        }
+        Tracks finalTrack = track;
+
+        // check if the track is already in the playlist
+        if (playlist.getTracks().stream().anyMatch(t -> t.getId().equals(finalTrack.getId()))) {
+            throw new IllegalStateException("Track already exists in the playlist");
+        } else {
+            playlist.getTracks().add(track);
+        }
+        playlistRepository.save(playlist);
+    }
+
+    @Transactional
+    public void removeTrackFromLikedTracks(String firebaseUid, String spotifyId) {
+        User user = userRepository.findByFirebaseUid(firebaseUid)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        Playlists playlist = playlistRepository.findByNameAndUser("SYS_LIKED_TRACKS", user)
+                .orElseThrow(() -> new EntityNotFoundException("Playlist not found"));
+
+        playlist.getTracks().removeIf(track -> track.getSpotifyId().equals(spotifyId));
+        playlistRepository.save(playlist);
+    }
+
+    public Boolean isTrackInLikedTracks(String firebaseUid, String spotifyId) {
+        User user = userRepository.findByFirebaseUid(firebaseUid)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        Playlists playlist = playlistRepository.findByNameAndUser("SYS_LIKED_TRACKS", user)
+                .orElse(null);
+
+        if (playlist == null) {
+            return false;
+        }
+        return playlist.getTracks().stream().anyMatch(track -> track.getSpotifyId().equals(spotifyId));
+    }
 } 

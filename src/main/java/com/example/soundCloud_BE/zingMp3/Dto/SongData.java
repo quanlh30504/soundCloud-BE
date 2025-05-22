@@ -1,10 +1,12 @@
 package com.example.soundCloud_BE.zingMp3.Dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -27,7 +29,9 @@ public class SongData {
 //    private boolean zingChoice;
 //    private boolean isPrivate;
 //    private boolean preRelease;
-    private long releaseDate;
+//    private long releaseDate;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd/MM/yyyy")
+    private LocalDate releaseDate;
     private List<String> genreIds;
     private String distributor;
 //    private List<String> indicators;

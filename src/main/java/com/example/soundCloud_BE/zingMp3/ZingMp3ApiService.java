@@ -74,7 +74,6 @@ public class ZingMp3ApiService {
     public <T> ApiResponse<T> requestZingMp3(String path, Map<String, String> params, ParameterizedTypeReference<ApiResponse<T>> responseType) {
 //        String cookie = getCookie();
         String cookie = getPremiumCookie();
-        System.out.println("Cookie: " + cookie);
 
         // Xây dựng URL với các query params
         UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(BASE_URL + path)
@@ -567,7 +566,7 @@ public class ZingMp3ApiService {
                     .spotifyId(songId)
                     .title(songData.getTitle())
                     .artists(songData.getArtistsNames())
-                    .coverUrl(songData.getThumbnail())
+                    .coverUrl(songData.getThumbnailM())
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
                     .build();

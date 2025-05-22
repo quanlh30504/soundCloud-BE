@@ -72,6 +72,7 @@ public class PlaylistDTO {
         return PlaylistDTO.builder()
                 .id(playlists.getId().toString()) // Map ID Spotify của Playlist
                 .name(playlists.getName()) // Lấy tên của Playlist
+                .ownerName(playlists.getUser().getDisplayName()) // Lấy tên người sở hữu Playlist
                 .description(playlists.getDescription()) // Mô tả Playlist
                 .tracks(playlists.getTracks() != null && !playlists.getTracks().isEmpty()?
                         playlists.getTracks().stream()

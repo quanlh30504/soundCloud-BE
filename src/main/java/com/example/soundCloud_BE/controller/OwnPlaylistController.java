@@ -12,6 +12,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/own-playlists")
 @RequiredArgsConstructor
@@ -104,4 +106,46 @@ public class OwnPlaylistController {
         return ResponseEntity.ok(exists);
     }
 
+
+    // Liked tracks
+
+    @GetMapping("/liked-tracks")
+    public ResponseEntity<Page<TrackDTO>> getLikedTracks(
+            @RequestHeader("X-Firebase-Uid") String firebaseUid,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "name") String sortBy,
+            @RequestParam(defaultValue = "asc") String direction) {
+
+        Sort sort = Sort.by(direction.equalsIgnoreCase("desc") ?
+            Sort.Direction.DESC : Sort.Direction.ASC, sortBy);
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Page<TrackDTO> tracks = ownPlaylistService.getLikedTracks(firebaseUid, pageable);
+        return ResponseEntity.ok(tracks);
+    }
+
+    @PostMapping("/liked-tracks/{spotifyId}")
+    public ResponseEntity<Void> addTrackToLikedTracks(
+            @RequestHeader("X-Firebase-Uid") String firebaseUid,
+            @PathVariable String spotifyId) {
+        ownPlaylistService.addTrackToLikedTracks(firebaseUid, spotifyId);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/liked-tracks/{spotifyId}")
+    public ResponseEntity<Void> removeTrackFromLikedTracks(
+            @RequestHeader("X-Firebase-Uid") String firebaseUid,
+            @PathVariable String spotifyId) {
+        ownPlaylistService.removeTrackFromLikedTracks(firebaseUid, spotifyId);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/liked-tracks/{spotifyId}/is-liked")
+    public ResponseEntity<Boolean> isTrackInLikedTracks(
+            @RequestHeader("X-Firebase-Uid") String firebaseUid,
+            @PathVariable String spotifyId) {
+
+        return ResponseEntity.ok(ownPlaylistService.isTrackInLikedTracks(firebaseUid, spotifyId));
+    }
 }

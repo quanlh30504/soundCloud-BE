@@ -55,4 +55,7 @@ public interface PlaylistRepository extends JpaRepository<Playlists, Integer> {
     // Kiểm tra xem track với spotifyId có tồn tại trong playlist cụ thể không
     @Query("SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END FROM Playlists p JOIN p.tracks t WHERE p.id = :playlistId AND t.spotifyId = :spotifyId")
     boolean existsTrackInPlaylistBySpotifyId(@Param("playlistId") Integer playlistId, @Param("spotifyId") String spotifyId);
+
+    Playlists findByName(String name);
+    Optional<Playlists> findByNameAndUser(String name, User user);
 }
