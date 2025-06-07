@@ -21,9 +21,9 @@ public class UserService {
 
 
     // Lấy thông tin user hiện tại
-    public UserResponse getCurrentUser() {
-        String uid = firebaseSecurityService.getCurrentUserId();
-        User user = userRepository.findByFirebaseUid(uid)
+    public UserResponse getCurrentUser(String firebaseUid) {
+//        String uid = firebaseSecurityService.getCurrentUserId();
+        User user = userRepository.findByFirebaseUid(firebaseUid)
                 .orElseThrow(() -> new NullPointerException("User not found"));
 
         return UserResponse.builder()
@@ -37,21 +37,21 @@ public class UserService {
 
     // Cập nhật profile
     @Transactional
-    public UserResponse updateProfile(UpdateProfileRequest request) {
-        String uid = firebaseSecurityService.getCurrentUserId();
+    public UserResponse updateProfile(UpdateProfileRequest request, String firebaseUid) {
+//        String uid = firebaseSecurityService.getCurrentUserId();
 
         // 1. Cập nhật trên Firebase (nếu cần)
-        try {
-            firebaseAuth.updateUser(
-                    new UserRecord.UpdateRequest(uid)
-                            .setDisplayName(request.getDisplayName())
-            );
-        } catch (FirebaseAuthException e) {
-            throw new RuntimeException("Failed to update Firebase profile");
-        }
+//        try {
+//            firebaseAuth.updateUser(
+//                    new UserRecord.UpdateRequest(firebaseUid)
+//                            .setDisplayName(request.getDisplayName())
+//            );
+//        } catch (FirebaseAuthException e) {
+//            throw new RuntimeException("Failed to update Firebase profile");
+//        }
 
         // 2. Cập nhật database
-        User user = userRepository.findByFirebaseUid(uid)
+        User user = userRepository.findByFirebaseUid(firebaseUid)
                 .orElseThrow(() -> new NullPointerException("User not found"));
 
         user.setDisplayName(request.getDisplayName());

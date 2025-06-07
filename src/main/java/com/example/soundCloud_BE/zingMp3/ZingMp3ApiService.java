@@ -823,6 +823,81 @@ public class ZingMp3ApiService {
         return data;
     }
 
+    // Get recommend keywords
+    public List<RecommendKeyword> getRecommendKeyword() {
+        String path = "/api/v2/app/get/recommend-keyword";
+        String sig = hashService.hashParamNoId(path);
+
+        Map<String, String> params = new HashMap<>();
+        params.put("sig", sig);
+
+        ApiResponse<List<RecommendKeyword>> response = requestZingMp3(
+                path,
+                params,
+                new ParameterizedTypeReference<ApiResponse<List<RecommendKeyword>>>() {}
+        );
+
+        if (response == null || response.getErr() != 0) {
+            String errorMsg = response != null ? response.getMsg() : "No response";
+            log.error("Failed to get recommend keywords: {}", errorMsg);
+            throw new RuntimeException("Failed to get recommend keywords: " + errorMsg);
+        }
+
+        List<RecommendKeyword> data = response.getData();
+        if (data == null) {
+            log.error("No recommend keywords data available");
+            throw new RuntimeException("No recommend keywords data available");
+        }
+
+        return data;
+    }
+
+    // Get AC suggestions
+    public AcSuggestions getAcSuggestions(String query) {
+        if (query == null || query.trim().isEmpty()) {
+            log.error("Query cannot be null or empty");
+            throw new IllegalArgumentException("Query cannot be null or empty");
+        }
+
+        // Use different base URL for AC suggestions
+        String originalBaseUrl = BASE_URL;
+        BASE_URL = "https://ac.zingmp3.vn";
+
+        try {
+            String path = "/v1/web/ac-suggestions";
+            String sig = hashService.hashParamNoId(path);
+
+            Map<String, String> params = new HashMap<>();
+            params.put("num", "10");
+            params.put("query", query);
+            params.put("language", "vi");
+            params.put("sig", sig);
+
+            ApiResponse<AcSuggestions> response = requestZingMp3(
+                    path,
+                    params,
+                    new ParameterizedTypeReference<ApiResponse<AcSuggestions>>() {}
+            );
+
+            if (response == null || response.getErr() != 0) {
+                String errorMsg = response != null ? response.getMsg() : "No response";
+                log.error("Failed to get AC suggestions: {}", errorMsg);
+                throw new RuntimeException("Failed to get AC suggestions: " + errorMsg);
+            }
+
+            AcSuggestions data = response.getData();
+            if (data == null) {
+                log.error("No AC suggestions data available");
+                throw new RuntimeException("No AC suggestions data available");
+            }
+
+            return data;
+        } finally {
+            // Restore original base URL
+            BASE_URL = originalBaseUrl;
+        }
+    }
+
 
 
 

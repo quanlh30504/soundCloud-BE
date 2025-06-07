@@ -8,6 +8,8 @@ import com.example.soundCloud_BE.zingMp3.Dto.HomeData.HubDetail;
 import com.example.soundCloud_BE.zingMp3.Dto.HomeData.Top100;
 import com.example.soundCloud_BE.zingMp3.Dto.SongData;
 import com.example.soundCloud_BE.zingMp3.Dto.SyncResponse;
+import com.example.soundCloud_BE.zingMp3.Dto.RecommendKeyword;
+import com.example.soundCloud_BE.zingMp3.Dto.AcSuggestions;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -178,4 +180,13 @@ public class ZingMp3Controller {
         return ResponseEntity.ok(zingMp3ApiService.getNewReleaseChart());
     }
 
+    @GetMapping("/recommend-keyword")
+    public ResponseEntity<List<RecommendKeyword>> getRecommendKeyword() {
+        return ResponseEntity.ok(zingMp3ApiService.getRecommendKeyword());
+    }
+
+    @GetMapping("/ac-suggestions")
+    public ResponseEntity<AcSuggestions> getAcSuggestions(@RequestParam("query") String query) {
+        return ResponseEntity.ok(zingMp3ApiService.getAcSuggestions(query));
+    }
 }

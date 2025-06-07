@@ -44,14 +44,15 @@ public class UserController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<UserResponse> getCurrentUser() {
-        return ResponseEntity.ok(userService.getCurrentUser());
+    public ResponseEntity<UserResponse> getCurrentUser(@RequestHeader("X-Firebase-Uid") String firebaseUid) {
+        return ResponseEntity.ok(userService.getCurrentUser(firebaseUid));
     }
 
     @PutMapping("/profile")
     public ResponseEntity<UserResponse> updateProfile(
+            @RequestHeader("X-Firebase-Uid") String firebaseUid,
             @RequestBody UpdateProfileRequest request) {
-        return ResponseEntity.ok(userService.updateProfile(request));
+        return ResponseEntity.ok(userService.updateProfile(request, firebaseUid));
     }
 
 
